@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Rex</string>
+    <string name="app_subtitle">Motor de Adaptación Nativo (Android 7 → 17)</string>
+    <string name="system_status">Estado del Sistema</string>
+    <string name="engine_active">Motor Nativo C++ / JNI Activo</string>
+    <string name="art_unsealed">ART Hidden APIs Unsealed</string>
+    <string name="vfs_configured">Sandbox VFS Configurado</string>
+    <string name="add_apk">Agregar APK</string>
+    <string name="add_apk_desc">Selecciona un archivo APK desde el almacenamiento para parchear y ejecutar nativamente.</string>
+    <string name="select_apk_button">Buscar APK en Smartphone</string>
+    <string name="no_apk_selected">No se ha seleccionado ninguna aplicación</string>
+    <string name="apk_details">Detalles de Compatibilidad</string>
+    <string name="adapt_and_run">Adaptar y Ejecutar Nativamente</string>
+    <string name="logs_title">Logs de Ejecución y Compatibilidad</string>
+</resources>
