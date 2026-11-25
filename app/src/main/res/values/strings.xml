@@ -5,11 +5,14 @@
     <string name="engine_active">Motor Nativo C++ / JNI Activo</string>
     <string name="art_unsealed">ART Hidden APIs Unsealed</string>
     <string name="vfs_configured">Sandbox VFS Configurado</string>
+    <string name="permissions_status">Permisos de Instalación / Storage OK</string>
+    <string name="grant_permissions_button">Configurar Permisos de Sistema</string>
     <string name="add_apk">Agregar APK</string>
     <string name="add_apk_desc">Selecciona un archivo APK desde el almacenamiento para parchear y ejecutar nativamente.</string>
     <string name="select_apk_button">Buscar APK en Smartphone</string>
     <string name="no_apk_selected">No se ha seleccionado ninguna aplicación</string>
     <string name="apk_details">Detalles de Compatibilidad</string>
     <string name="adapt_and_run">Adaptar y Ejecutar Nativamente</string>
+    <string name="install_apk_button">Instalar APK Adaptado</string>
     <string name="logs_title">Logs de Ejecución y Compatibilidad</string>
 </resources>

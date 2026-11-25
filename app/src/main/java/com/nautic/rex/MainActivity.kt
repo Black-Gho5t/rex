@@ -13,6 +13,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.nautic.rex.compat.ApkCompatibilityEngine
 import com.nautic.rex.compat.ApkManifestFixer
+import com.nautic.rex.compat.PermissionManager
 import com.nautic.rex.compat.VfsManager
 import com.nautic.rex.databinding.ActivityMainBinding
 import java.io.File
@@ -34,6 +35,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Multiple runtime permission launcher
+    private val requestRuntimePermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        if (allGranted) {
+            Toast.makeText(this, "Permisos del sistema concedidos", Toast.LENGTH_SHORT).show()
+        }
+        checkAndDisplayPermissionStatus()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -52,6 +64,57 @@ class MainActivity : AppCompatActivity() {
 
         setupInitialUi(nativeMessage, unsealSuccess)
         setupClickListeners()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkAndDisplayPermissionStatus()
+    }
+
+    private fun checkAndDisplayPermissionStatus() {
+        val hasStorage = PermissionManager.hasFullStorageAccess(this)
+        val canInstall = PermissionManager.canInstallPackages(this)
+
+        if (hasStorage && canInstall) {
+            binding.tvPermStatus.text = "Permisos de Instalación y Storage: ACTIVO (Confiable)"
+            binding.ivPermIcon.setImageResource(R.drawable.ic_check_circle)
+            binding.btnGrantPermissions.visibility = View.GONE
+        } else {
+            val statusText = StringBuilder().apply {
+                append("Permisos requeridos: ")
+                if (!hasStorage) append("[Acceso Archivos] ")
+                if (!canInstall) append("[Instalación APKs] ")
+            }
+            binding.tvPermStatus.text = statusText.toString()
+            binding.btnGrantPermissions.visibility = View.VISIBLE
+        }
+    }
+
+    private fun requestAllRequiredPermissions() {
+        val canInstall = PermissionManager.canInstallPackages(this)
+        if (!canInstall) {
+            val installIntent = PermissionManager.requestInstallPackagesIntent(this)
+            if (installIntent != null) {
+                startActivity(installIntent)
+                Toast.makeText(this, "Habilita la opción 'Autorizar descargas e instalaciones'", Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+
+        val hasStorage = PermissionManager.hasFullStorageAccess(this)
+        if (!hasStorage) {
+            val storageIntent = PermissionManager.requestFullStorageAccessIntent(this)
+            if (storageIntent != null) {
+                startActivity(storageIntent)
+                Toast.makeText(this, "Concede acceso a la gestión de todos los archivos", Toast.LENGTH_LONG).show()
+                return
+            }
+        }
+
+        val missingRuntime = PermissionManager.getMissingRuntimePermissions(this)
+        if (missingRuntime.isNotEmpty()) {
+            requestRuntimePermissionsLauncher.launch(missingRuntime.toTypedArray())
+        }
     }
 
     private fun setupWindowInsets() {
@@ -104,10 +167,27 @@ class MainActivity : AppCompatActivity() {
         binding.btnSelectApk.setOnClickListener(openPickerAction)
         binding.fabAddApk.setOnClickListener(openPickerAction)
 
+        binding.btnGrantPermissions.setOnClickListener {
+            requestAllRequiredPermissions()
+        }
+
         binding.btnAdaptAndRun.setOnClickListener {
             val apk = currentApkFile
             if (apk != null && apk.exists()) {
                 executeApkAdaptation(apk)
+            } else {
+                Toast.makeText(this, "Selecciona primero un APK válido", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnInstallApk.setOnClickListener {
+            val apk = currentApkFile
+            if (apk != null && apk.exists()) {
+                if (!PermissionManager.canInstallPackages(this)) {
+                    requestAllRequiredPermissions()
+                } else {
+                    PermissionManager.installApkFile(this, apk)
+                }
             } else {
                 Toast.makeText(this, "Selecciona primero un APK válido", Toast.LENGTH_SHORT).show()
             }
@@ -120,11 +200,16 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val tempFile = File(cacheDir, "temp_app.apk")
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 FileOutputStream(tempFile).use { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
             }
+            tempFile.setWritable(false, false)
+            tempFile.setReadOnly()
 
             currentApkFile = tempFile
             val report = compatibilityEngine.inspectAndPrepareApk(tempFile.absolutePath)
